@@ -11,10 +11,6 @@
 #' @export
 DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column = "Class", adjust.method = "fdr") {
 
-  require(tidyverse)
-  require(edgeR)
-  require(DESeq2)
-
   result <- list()
 
   if(class.column != "Class") {
