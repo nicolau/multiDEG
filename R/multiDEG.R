@@ -6,6 +6,8 @@
 #' @param nontreated A string containing the name of class to be considered as nontreatment
 #' @param class.column A string contatining the name of column where treated and nontreated will be extracted
 #' @param adjust.method Merhod of multiple comparison will be used for Wilcoxon rank-sum test pvalues.
+#' @param covariables
+#' @param paired.samples
 #'
 #' @return A list of data.frame for Wilcoxon rank-sum test, DESeq2 and edgeR
 #' @export
