@@ -6,12 +6,38 @@
 #' @param nontreated A string containing the name of class to be considered as nontreatment
 #' @param class.column A string contatining the name of column where treated and nontreated will be extracted
 #' @param adjust.method Merhod of multiple comparison will be used for Wilcoxon rank-sum test pvalues.
-#' @param covariables
-#' @param paired.samples
+#' @param covariables A vector list of variables should be used to covariates adjusment.
+#' @param paired.samples A boolean variable to indicate paired-sample comparison
 #'
 #' @return A list of data.frame for Wilcoxon rank-sum test, DESeq2 and edgeR
 #' @export
-DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column = "Class", adjust.method = "fdr") {
+DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column = "Class", adjust.method = "fdr", covariables = NULL, paired.samples.column = NULL) {
+
+  # class.column <- "Class"
+  # adjust.method <- "fdr"
+  # treated <- "INF"
+  # nontreated <- "CTRL"
+  # covariables <- c("Gender")
+  # covariables <- NULL
+  # paired.samples.column = NULL
+  #
+  # library(tidyverse)
+  # library(DESeq2)
+  # library(edgeR)
+
+
+
+
+
+  covariablesStop   <- FALSE
+  covariablesVector <- NULL
+  for(var in covariables) {
+    if(!var %in% colnames(phenodata)) {
+      covariablesStop <- TRUE
+      covariablesVector <- c(covariablesVector, var)
+    }
+  }
+  if(covariablesStop) {stop("Covariables: \"", paste(covariablesVector, collapse = ", "), "\" has not found in the phenodata file!")}
 
   result <- list()
 
@@ -23,11 +49,21 @@ DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column =
   }
 
 
-  phenodata <- phenodata %>% dplyr::filter(Class %in% c(treated, nontreated))
-  raw.exp   <- raw.exp %>% dplyr::select(phenodata$Sample)
+  if(length(covariables) > 1) {
+    phenodata <- phenodata %>% tidyr::unite(Concatenate, c(covariables), remove = FALSE)
+    model <- paste0("~", paste(c(paired.samples.column, "Concatenate", class.column), collapse = "+"))
+  } else if(length(covariables) == 1) {
+    model <- paste0("~", paste(c(paired.samples.column, covariables, class.column), collapse = "+"))
+  } else {
+    model <- paste0("~", paste(c(paired.samples.column, class.column), collapse = "+"))
+  }
 
 
-  conditions <- factor(t(phenodata$Class))  %>% relevel(conditions, ref = nontreated)
+  phenodata  <- phenodata %>% dplyr::filter(Class %in% c(treated, nontreated))
+  raw.exp    <- raw.exp %>% dplyr::select(phenodata$Sample)
+
+  conditions <- factor(t(phenodata$Class)) %>% relevel(conditions, ref = nontreated)
+
   # Use this variable as covariates
   # gender     <- factor(t(phenodata$Gender))
 
@@ -71,6 +107,7 @@ DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column =
   message("Calculating DE genes using DESeq2...")
   contrasts <- c("Class", treated, nontreated)
   dds <- DESeq2::DESeqDataSetFromMatrix(countData = raw.exp, colData = phenodata, design = ~ Class)
+  dds <- DESeq2::DESeqDataSetFromMatrix(countData = raw.exp, colData = phenodata, design = as.formula(model))
 
   dds <- DESeq2::DESeq(dds)
   res <- DESeq2::results(dds, contrast = contrasts)
@@ -86,10 +123,11 @@ DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column =
 
   ##################################################################### edgeR ####################################################################
   message("Calculating DE genes using edgeR...")
-  group  <- conditions
+  # group  <- conditions
   y      <- DGEList(raw.exp)
   y      <- calcNormFactors(y)
-  term   <- ~0+group
+  # term   <- ~0+group
+  term   <- as.formula(model)
   design <- model.matrix(term)
 
   y      <- estimateDisp(y, design)
