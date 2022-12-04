@@ -194,10 +194,12 @@ overlap_DEGs <- function(listDEGs, p_cutoff = 0.05, log2fc_cutoff = 1, padjusted
 
   source("https://raw.githubusercontent.com/nicolau/code-R/master/funcoes_para_diagrama_venn.R")
 
-  plot.triple.venn(a1 = genes_wilcox_down, a2 = genes_edgeR_down, a3 = genes_DESeq2_down,
-                   labels = c("Wilcox", "edgeR", "DESeq2"))
+  plot_down <- plot.triple.venn(a1 = genes_wilcox_down, a2 = genes_edgeR_down, a3 = genes_DESeq2_down,
+                                labels = c("Wilcox", "edgeR", "DESeq2"))
 
-  plot.triple.venn(a1 = genes_wilcox_up, a2 = genes_edgeR_up, a3 = genes_DESeq2_up,
-                   labels = c("Wilcox", "edgeR", "DESeq2"))
+  plot_up <- plot.triple.venn(a1 = genes_wilcox_up, a2 = genes_edgeR_up, a3 = genes_DESeq2_up,
+                              labels = c("Wilcox", "edgeR", "DESeq2"))
+
+  return(list("plot_up" = plot_up, "plot_down" = plot_down))
 
 }
