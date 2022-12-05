@@ -22,3 +22,14 @@ library(tidyverse)
 data(raw.exp)
 data(phenodata)
 ```
+
+# Get Venn Diagram plot for overlap between three methods
+## For Up-regulated genes
+```
+plot(listDEGs = results, type = "up")
+```
+
+## For Down-regulated genes
+```
+plot(listDEGs = results, type = "down")
+```
