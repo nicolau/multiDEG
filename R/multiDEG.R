@@ -13,21 +13,17 @@
 #' @export
 DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column = "Class", adjust.method = "fdr", covariables = NULL, paired.samples.column = NULL) {
 
-  class.column          <- "Class"
-  adjust.method         <- "fdr"
-  treated               <- "INF"
-  nontreated            <- "CTRL"
-  covariables           <- c("Gender")
-  covariables           <- NULL
-  paired.samples.column <- NULL
-
-  library(tidyverse)
-  library(DESeq2)
-  library(edgeR)
-
-
-
-
+  # class.column          <- "Class"
+  # adjust.method         <- "fdr"
+  # treated               <- "INF"
+  # nontreated            <- "CTRL"
+  # covariables           <- c("Gender")
+  # covariables           <- NULL
+  # paired.samples.column <- NULL
+  #
+  # library(tidyverse)
+  # library(DESeq2)
+  # library(edgeR)
 
   covariablesStop   <- FALSE
   covariablesVector <- NULL
@@ -140,9 +136,14 @@ DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column =
   ##################################################################### edgeR ####################################################################
 
 
-  overlap_result <- overlap_DEGs(listDEGs = result)
 
+
+  ################################################################# Overlap DEGs #################################################################
+  overlap_result <- overlap_DEGs(listDEGs = result)
   result[["overlap"]] <- overlap_result
+  ################################################################# Overlap DEGs #################################################################
+
+
 
 
   return(result)
@@ -201,6 +202,8 @@ overlap_DEGs <- function(listDEGs, p_cutoff = 0.05, log2fc_cutoff = 1, padjusted
 
   plot_down <- plot.triple.venn(a1 = genes_wilcox_down, a2 = genes_edgeR_down, a3 = genes_DESeq2_down, labels = c("Wilcox", "edgeR", "DESeq2"))
   plot_up   <- plot.triple.venn(a1 = genes_wilcox_up,   a2 = genes_edgeR_up,   a3 = genes_DESeq2_up,   labels = c("Wilcox", "edgeR", "DESeq2"))
+
+  if(!is.null(dev.list())) { dev.off() }
 
   return(list("plot_up" = plot_up, "plot_down" = plot_down))
 
@@ -268,4 +271,14 @@ plot.triple.venn <- function(a1 = c( "a", "b", "c", "d", "e", "t", "g", "h" ),
   result[["exclusive_G3"]]    <- exclusive$a3
 
   return(result)
+}
+
+
+plot <- function(listDEGs, type = c("up", "down")) {
+  if(!is.null(dev.list())) { dev.off() }
+  if(type == "up") {
+    grid.draw(listDEGs$overlap$plot_up$plot)
+  } else {
+    grid.draw(listDEGs$overlap$plot_down$plot)
+  }
 }
