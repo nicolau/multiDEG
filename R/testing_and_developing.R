@@ -1,6 +1,8 @@
 library(tidyverse)
 library(edgeR)
 library(DESeq2)
+# devtools::install_github("nicolau/multiDEG")
+library(multiDEG)
 
 load("data/phenodata.rda")
 load("data/raw.exp.rda")
