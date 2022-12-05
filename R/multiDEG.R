@@ -13,17 +13,17 @@
 #' @export
 DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column = "Class", adjust.method = "fdr", covariables = NULL, paired.samples.column = NULL) {
 
-  # class.column <- "Class"
-  # adjust.method <- "fdr"
-  # treated <- "INF"
-  # nontreated <- "CTRL"
-  # covariables <- c("Gender")
-  # covariables <- NULL
-  # paired.samples.column = NULL
-  #
-  # library(tidyverse)
-  # library(DESeq2)
-  # library(edgeR)
+  class.column          <- "Class"
+  adjust.method         <- "fdr"
+  treated               <- "INF"
+  nontreated            <- "CTRL"
+  covariables           <- c("Gender")
+  covariables           <- NULL
+  paired.samples.column <- NULL
+
+  library(tidyverse)
+  library(DESeq2)
+  library(edgeR)
 
 
 
@@ -51,11 +51,11 @@ DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column =
 
   if(length(covariables) > 1) {
     phenodata <- phenodata %>% tidyr::unite(Concatenate, c(covariables), remove = FALSE)
-    model <- paste0("~", paste(c(paired.samples.column, "Concatenate", class.column), collapse = "+"))
+    model <- paste0("~0+", paste(c(paired.samples.column, "Concatenate", class.column), collapse = "+"))
   } else if(length(covariables) == 1) {
-    model <- paste0("~", paste(c(paired.samples.column, covariables, class.column), collapse = "+"))
+    model <- paste0("~0+", paste(c(paired.samples.column, covariables, class.column), collapse = "+"))
   } else {
-    model <- paste0("~", paste(c(paired.samples.column, class.column), collapse = "+"))
+    model <- paste0("~0+", paste(c(paired.samples.column, class.column), collapse = "+"))
   }
 
 
@@ -123,11 +123,11 @@ DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column =
 
   ##################################################################### edgeR ####################################################################
   message("Calculating DE genes using edgeR...")
-  # group  <- conditions
+  group  <- conditions
   y      <- DGEList(raw.exp)
   y      <- calcNormFactors(y)
-  # term   <- ~0+group
-  term   <- as.formula(model)
+  term   <- ~0+group
+  # term   <- as.formula(model)
   design <- model.matrix(term)
 
   y      <- estimateDisp(y, design)
@@ -138,6 +138,11 @@ DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column =
   message("Done!")
   message("")
   ##################################################################### edgeR ####################################################################
+
+
+  overlap_result <- overlap_DEGs(listDEGs = result)
+
+  result[["overlap"]] <- overlap_result
 
 
   return(result)
@@ -192,14 +197,75 @@ overlap_DEGs <- function(listDEGs, p_cutoff = 0.05, log2fc_cutoff = 1, padjusted
     dplyr::select(Symbol) %>%
     unlist(use.names = F)
 
-  source("https://raw.githubusercontent.com/nicolau/code-R/master/funcoes_para_diagrama_venn.R")
+  # source("https://raw.githubusercontent.com/nicolau/code-R/master/funcoes_para_diagrama_venn.R")
 
-  plot_down <- plot.triple.venn(a1 = genes_wilcox_down, a2 = genes_edgeR_down, a3 = genes_DESeq2_down,
-                                labels = c("Wilcox", "edgeR", "DESeq2"))
-
-  plot_up <- plot.triple.venn(a1 = genes_wilcox_up, a2 = genes_edgeR_up, a3 = genes_DESeq2_up,
-                              labels = c("Wilcox", "edgeR", "DESeq2"))
+  plot_down <- plot.triple.venn(a1 = genes_wilcox_down, a2 = genes_edgeR_down, a3 = genes_DESeq2_down, labels = c("Wilcox", "edgeR", "DESeq2"))
+  plot_up   <- plot.triple.venn(a1 = genes_wilcox_up,   a2 = genes_edgeR_up,   a3 = genes_DESeq2_up,   labels = c("Wilcox", "edgeR", "DESeq2"))
 
   return(list("plot_up" = plot_up, "plot_down" = plot_down))
 
+}
+
+
+
+plot.triple.venn <- function(a1 = c( "a", "b", "c", "d", "e", "t", "g", "h" ),
+                             a2 = c( "x", "b", "c", "d", "e", "f", "g", "z" ),
+                             a3 = c( "y", "b", "c", "d", "x", "f", "g", "h" ),
+                             labels = c("Group1", "Group2", "Group3"),
+                             saveGroupFile = FALSE) {
+  result <- list()
+
+  exclusive <- NULL
+  data      <- NULL
+
+  data$values <- unique(c(a1, a2, a3))
+
+  data$a1   <- a1
+  data$a2   <- a2
+  data$a3   <- a3
+
+  data$n12  <- intersect(a1, a2)
+  data$n13  <- intersect(a1, a3)
+
+  data$n23  <- intersect(a2, a3)
+
+  data$n123 <- intersect(data$n12, a3)
+
+  # Reference four-set diagram
+  venn.plot <- draw.triple.venn(
+    area1    = length(data$a1),
+    area2    = length(data$a2),
+    area3    = length(data$a3),
+    n12      = length(data$n12),
+    n13      = length(data$n13),
+    n23      = length(data$n23),
+    n123     = length(data$n123),
+    category = labels,
+    fill     = c("green", "red", "blue"),
+    lty      = "dashed",
+    cex      = 2,
+    cat.cex  = 2,
+    cat.col  = c("green", "red", "blue")
+  )
+
+
+  exclusive$a1 <- c(setdiff(setdiff(data$a1, data$a2), data$a3))
+  exclusive$a2 <- c(setdiff(setdiff(data$a2, data$a1), data$a3))
+  exclusive$a3 <- c(setdiff(setdiff(data$a3, data$a2), data$a1))
+
+  data$n12 <- setdiff(data$n12, data$n123)
+  data$n13 <- setdiff(data$n13, data$n123)
+  data$n23 <- setdiff(data$n23, data$n123)
+
+
+  result[["plot"]]            <- venn.plot
+  result[["shared_all"]]      <- data$n123
+  result[["shared_G1_vs_G2"]] <- data$n12
+  result[["shared_G1_vs_G3"]] <- data$n13
+  result[["shared_G2_vs_G3"]] <- data$n23
+  result[["exclusive_G1"]]    <- exclusive$a1
+  result[["exclusive_G2"]]    <- exclusive$a2
+  result[["exclusive_G3"]]    <- exclusive$a3
+
+  return(result)
 }
