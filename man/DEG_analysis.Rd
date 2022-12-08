@@ -10,7 +10,9 @@ DEG_analysis(
   treated,
   nontreated,
   class.column = "Class",
-  adjust.method = "fdr"
+  adjust.method = "fdr",
+  covariables = NULL,
+  paired.samples.column = NULL
 )
 }
 \arguments{
@@ -25,6 +27,10 @@ DEG_analysis(
 \item{class.column}{A string contatining the name of column where treated and nontreated will be extracted}
 
 \item{adjust.method}{Merhod of multiple comparison will be used for Wilcoxon rank-sum test pvalues.}
+
+\item{covariables}{A vector list of variables should be used to covariates adjusment.}
+
+\item{paired.samples}{A boolean variable to indicate paired-sample comparison}
 }
 \value{
 A list of data.frame for Wilcoxon rank-sum test, DESeq2 and edgeR
