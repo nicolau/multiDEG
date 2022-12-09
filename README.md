@@ -23,6 +23,12 @@ data(raw.exp)
 data(phenodata)
 ```
 
+# Calculating DEG using Wilcox, DESeq2, and edgeR methods
+
+```
+results <- DEG_analysis(raw.exp = raw.exp, phenodata = phenodata, treated = "INF", nontreated = "CTRL", class.column = "Class", adjust.method = "fdr", covariables = NULL, paired.samples.column = NULL)
+```
+
 # Get Venn Diagram plot for overlap between three methods
 ## For Up-regulated genes
 ```
