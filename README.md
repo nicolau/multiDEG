@@ -14,6 +14,7 @@ devtools::install_github("nicolau/multiDEG")
 library(DESeq2)
 library(edgeR)
 library(tidyverse)
+library(VennDiagram)
 ```
 
 # Loading example expression and phenodata files
