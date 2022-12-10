@@ -70,13 +70,13 @@ DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column =
   ############################################################ Wilcoxon rank-sum test ############################################################
   message("Calculating DE genes using Wilcoxon rank-sum test...")
   # edgeR TMM normalize
-  y <- DGEList(counts = raw.exp, group = conditions)
+  y <- edgeR::DGEList(counts = raw.exp, group = conditions)
   ## Remove rows conssitently have zero or very low counts
-  keep <- filterByExpr(y)
+  keep <- edgeR::filterByExpr(y)
   y <- y[keep, keep.lib.sizes = FALSE]
   ## Perform TMM normalization and convert to CPM (Counts Per Million)
-  y <- calcNormFactors(y, method = "TMM")
-  norm.exp <- cpm(y) %>% as.data.frame()
+  y <- edgeR::calcNormFactors(y, method = "TMM")
+  norm.exp <- edgeR::cpm(y) %>% as.data.frame()
   # Run the Wilcoxon rank-sum test for each gene
   pvalues <- sapply(1:nrow(norm.exp), function(i){
     data <- cbind.data.frame(gene = as.numeric(t(norm.exp[i,])), conditions)
@@ -116,16 +116,16 @@ DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column =
   ##################################################################### edgeR ####################################################################
   message("Calculating DE genes using edgeR...")
   group  <- conditions
-  y      <- DGEList(raw.exp)
-  y      <- calcNormFactors(y)
+  y      <- edgeR::DGEList(raw.exp)
+  y      <- edgeR::calcNormFactors(y)
   term   <- ~0+group
   # term   <- as.formula(model)
   design <- model.matrix(term)
 
-  y      <- estimateDisp(y, design)
-  fit    <- glmFit(y, design)
-  lrt    <- glmLRT(fit, coef = 2, contrast = c(-1, 1))
-  tTags  <- topTags(lrt, n = NULL)[["table"]]
+  y      <- edgeR::estimateDisp(y, design)
+  fit    <- edgeR::glmFit(y, design)
+  lrt    <- edgeR::glmLRT(fit, coef = 2, contrast = c(-1, 1))
+  tTags  <- edgeR::topTags(lrt, n = NULL)[["table"]]
   result[['edgeR']] <- tTags
   message("Done!")
   message("")
@@ -233,7 +233,14 @@ overlap_DEGs <- function(listDEGs, p_cutoff = 0.05, log2fc_cutoff = 1, padjusted
 }
 
 
-
+#' Plot triple venn diagram
+#'
+#' @param listDEGs list of results from DEG_analysis
+#' @param p_cutoff cut-off for p-value
+#' @param log2fc_cutoff cut-off for log2 Fold-change values
+#' @param padjusted Boolean value to use or not adjusted p-values for p_cutoff
+#'
+#' @return A list of data.frame for Wilcoxon rank-sum test, DESeq2 and edgeR
 plot.triple.venn <- function(a1 = c( "a", "b", "c", "d", "e", "t", "g", "h" ),
                              a2 = c( "x", "b", "c", "d", "e", "f", "g", "z" ),
                              a3 = c( "y", "b", "c", "d", "x", "f", "g", "h" ),
@@ -257,7 +264,7 @@ plot.triple.venn <- function(a1 = c( "a", "b", "c", "d", "e", "t", "g", "h" ),
   data$n123 <- intersect(data$n12, a3)
 
   # Reference four-set diagram
-  venn.plot <- draw.triple.venn(
+  venn.plot <- VennDiagram::draw.triple.venn(
     area1    = length(data$a1),
     area2    = length(data$a2),
     area3    = length(data$a3),
@@ -295,7 +302,15 @@ plot.triple.venn <- function(a1 = c( "a", "b", "c", "d", "e", "t", "g", "h" ),
   return(result)
 }
 
-
+#' Plot function
+#'
+#' @param listDEGs list of results from DEG_analysis
+#' @param p_cutoff cut-off for p-value
+#' @param log2fc_cutoff cut-off for log2 Fold-change values
+#' @param padjusted Boolean value to use or not adjusted p-values for p_cutoff
+#'
+#' @return A list of data.frame for Wilcoxon rank-sum test, DESeq2 and edgeR
+#' @export
 plot <- function(listDEGs, type = c("up", "down")) {
   if(!is.null(dev.list())) { dev.off() }
   if(type == "up") {
