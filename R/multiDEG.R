@@ -319,3 +319,22 @@ plot <- function(listDEGs, type = c("up", "down")) {
     grid.draw(listDEGs$overlap$plot_down$plot)
   }
 }
+
+#' Export DEG tables for a specific DE method
+#'
+#' @param listDEGs list of results from DEG_analysis
+#' @param p_cutoff cut-off for p-value
+#' @param log2fc_cutoff cut-off for log2 Fold-change values
+#' @param padjusted Boolean value to use or not adjusted p-values for p_cutoff
+#'
+#' @return A list of data.frame for Wilcoxon rank-sum test, DESeq2 and edgeR
+#' @export
+get_DEG_table <- function(listDEGs, method = c("Wilcox", "DESeq2", "edgeR")) {
+  table <- NULL
+  if(method == "Wilcox") {
+    table <- results$`Wilcoxon rank-sum test`
+  } else {
+    table <- results[[method]]
+  }
+  return(table)
+}
