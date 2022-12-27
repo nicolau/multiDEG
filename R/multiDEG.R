@@ -20,10 +20,13 @@ DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column =
   # covariables           <- c("Gender")
   # covariables           <- NULL
   # paired.samples.column <- NULL
+  # data(phenodata)
+  # data(raw.exp)
   #
   # library(tidyverse)
   # library(DESeq2)
   # library(edgeR)
+
 
   covariablesStop   <- FALSE
   covariablesVector <- NULL
@@ -89,7 +92,7 @@ DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column =
   dataCon2 <- norm.exp %>% dplyr::select(c(which(conditions==treated)))
   foldChanges <- log2(rowMeans(dataCon2)/rowMeans(dataCon1))
   # Output results based on the FDR threshold 0.05
-  outRst <- data.frame(row.names = rownames(norm.exp), log2foldChange = foldChanges, pValues = pvalues, FDR = fdr) %>% na.omit(outRst)
+  outRst <- data.frame(row.names = rownames(norm.exp), log2FoldChange = foldChanges, pvalue = pvalues, padj = fdr) %>% na.omit(outRst)
 
   result[['Wilcoxon rank-sum test']] <- outRst
   message("Done!")
@@ -137,6 +140,7 @@ DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column =
   result[["overlap"]] <- overlap_result
   ################################################################# Overlap DEGs #################################################################
 
+  result[['edgeR']] <- result[['edgeR']] %>% dplyr::rename(log2FoldChange = logFC, pvalue = PValue, padj = FDR)
 
   return(result)
 }
@@ -337,4 +341,170 @@ get_DEG_table <- function(listDEGs, method = c("Wilcox", "DESeq2", "edgeR")) {
     table <- results[[method]]
   }
   return(table)
+}
+
+#' Export DEG tables for a specific DE method
+#'
+#' @param listDEGs list of results from DEG_analysis
+#' @param p_cutoff cut-off for p-value
+#' @param log2fc_cutoff cut-off for log2 Fold-change values
+#' @param padjusted Boolean value to use or not adjusted p-values for p_cutoff
+#'
+#' @return A list of data.frame for Wilcoxon rank-sum test, DESeq2 and edgeR
+#' @export
+get_DEG_symbols <- function(listDEGs, method = c("Wilcox", "DESeq2", "edgeR"), direction = c("up", "down"),  p_cutoff = 0.05, log2fc_cutoff = 1, padjusted = F) {
+
+  symbols    <- NULL
+  table_DEGs <- NULL
+
+  if(method == "Wilcox") {
+    table_DEGs <- listDEGs$`Wilcoxon rank-sum test`
+  } else if(method == "DESeq2") {
+    table_DEGs <- listDEGs$DESeq2
+  } else {
+    table_DEGs <- listDEGs$edgeR
+  }
+
+  if(direction == "up") {
+    symbols <- table_DEGs %>%
+      dplyr::filter(log2FoldChange > log2fc_cutoff) %>%
+      tibble::rownames_to_column("Symbol")
+  } else {
+    symbols <- table_DEGs %>%
+      dplyr::filter(log2FoldChange < -log2fc_cutoff) %>%
+      tibble::rownames_to_column("Symbol")
+  }
+
+  if(padjusted) {
+    symbols <- symbols %>%
+      dplyr::filter(padj < p_cutoff) %>%
+      dplyr::select(Symbol) %>%
+      unlist(use.names = F)
+  } else {
+    symbols <- symbols %>%
+      dplyr::filter(pvalue < p_cutoff) %>%
+      dplyr::select(Symbol) %>%
+      unlist(use.names = F)
+  }
+
+  return(table)
+}
+
+#' Export DEG tables for a specific DE method
+#'
+#' @param listDEGs list of results from DEG_analysis
+#' @param p_cutoff cut-off for p-value
+#' @param log2fc_cutoff cut-off for log2 Fold-change values
+#' @param padjusted Boolean value to use or not adjusted p-values for p_cutoff
+#'
+#' @return A list of data.frame for Wilcoxon rank-sum test, DESeq2 and edgeR
+#' @export
+pvalue_distribution_plot <- function(listDEGs, method = c("Wilcox", "DESeq2", "edgeR"), padjusted = F) {
+  if(method == "wilcox") {
+    table_DEGs <- listDEGs$`Wilcoxon rank-sum test`
+  } else if(method == "DESeq2") {
+    table_DEGs <- listDEGs$DESeq2
+  } else {
+    table_DEGs <- listDEGs$edgeR
+  }
+
+  if(padjusted) {
+    p <- ggplot2::ggplot(table_DEGs, aes(padj)) +
+      ggplot2::geom_histogram() +
+      ggplot2::theme_classic()
+  } else {
+    p <- ggplot2::ggplot(table_DEGs, aes(pvalue)) +
+      ggplot2::geom_histogram() +
+      ggplot2::theme_classic()
+  }
+
+  return(p)
+
+}
+
+
+#' Export DEG tables for a specific DE method
+#'
+#' @param listDEGs list of results from DEG_analysis
+#' @param p_cutoff cut-off for p-value
+#' @param log2fc_cutoff cut-off for log2 Fold-change values
+#' @param padjusted Boolean value to use or not adjusted p-values for p_cutoff
+#'
+#' @return A list of data.frame for Wilcoxon rank-sum test, DESeq2 and edgeR
+#' @export
+log2fc_correlation_plot <- function(listDEGs, method_one = c("Wilcox", "DESeq2", "edgeR"), method_two = c("Wilcox", "DESeq2", "edgeR")) {
+
+  if(method_one != method_two) {
+    if(method_one == "wilcox") {
+      table_one <- listDEGs$`Wilcoxon rank-sum test` %>% tibble::rownames_to_column("Symbol")
+      xlabel <- "Wilcox"
+    } else if(method_one == "DESeq2") {
+      table_one <- listDEGs$DESeq2 %>% tibble::rownames_to_column("Symbol")
+      xlabel <- "DESeq2"
+    } else {
+      table_one <- listDEGs$edgeR %>% tibble::rownames_to_column("Symbol")
+      xlabel <- "edgeR"
+    }
+
+    if(method_two == "wilcox") {
+      table_two <- listDEGs$`Wilcoxon rank-sum test` %>% tibble::rownames_to_column("Symbol")
+      ylabel <- "Wilcox"
+    } else if(method_two == "DESeq2") {
+      table_two <- listDEGs$DESeq2 %>% tibble::rownames_to_column("Symbol")
+      ylabel <- "DESeq2"
+    } else {
+      table_two <- listDEGs$edgeR %>% tibble::rownames_to_column("Symbol")
+      ylabel <- "edgeR"
+    }
+
+    table_merge <- dplyr::inner_join(x = table_one, y = table_two, by = "Symbol")
+
+  }
+
+  p <- ggplot2::ggplot(table_merge, aes(x = log2FoldChange.x, y = log2FoldChange.y)) +
+    ggplot2::geom_point() +
+    ggplot2::theme_classic() +
+    xlab(xlabel) +
+    ylab(ylabel)
+
+  return(p)
+
+}
+
+
+#' Export DEG tables for a specific DE method
+#'
+#' @param listDEGs list of results from DEG_analysis
+#' @param p_cutoff cut-off for p-value
+#' @param log2fc_cutoff cut-off for log2 Fold-change values
+#' @param padjusted Boolean value to use or not adjusted p-values for p_cutoff
+#'
+#' @return A list of data.frame for Wilcoxon rank-sum test, DESeq2 and edgeR
+#' @export
+save_ranked_table <- function(listDEGs, method = c("Wilcox", "DESeq2", "edgeR"), padjusted = FALSE) {
+
+  table_DEGs <- NULL
+  if(method == "wilcox") {
+    table_DEGs <- listDEGs$`Wilcoxon rank-sum test` %>% tibble::rownames_to_column("Symbol")
+  } else if(method == "DESeq2") {
+    table_DEGs <- listDEGs$DESeq2 %>% tibble::rownames_to_column("Symbol")
+  } else {
+    table_DEGs <- listDEGs$edgeR %>% tibble::rownames_to_column("Symbol")
+  }
+
+  if(padjusted) {
+    table_DEGs <- table_DEGs %>%
+      tibble::rownames_to_column("Symbol") %>%
+      dplyr::mutate(Rank = log2FoldChange * -log10(padj)) %>%
+      dplyr::select(Symbol, Rank) %>%
+      dplyr::arrange(-Rank)
+  } else {
+    table_DEGs <- table_DEGs %>%
+      tibble::rownames_to_column("Symbol") %>%
+      dplyr::mutate(Rank = log2FoldChange * -log10(pvalue)) %>%
+      dplyr::select(Symbol, Rank) %>%
+      dplyr::arrange(-Rank)
+  }
+
+  return(table_DEGs)
 }
