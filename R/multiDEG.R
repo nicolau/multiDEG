@@ -185,20 +185,20 @@ overlap_DEGs <- function(listDEGs, p_cutoff = 0.05, log2fc_cutoff = 1, padjusted
   genes_edgeR_down <- listDEGs$edgeR %>% tibble::rownames_to_column("Symbol")
   if(padjusted) {
     genes_edgeR_up<- genes_edgeR_up %>%
-      dplyr::filter(logFC > log2fc_cutoff  & FDR < p_cutoff) %>%
+      dplyr::filter(log2FoldChange > log2fc_cutoff  & padj < p_cutoff) %>%
       dplyr::select(Symbol) %>%
       unlist(use.names = F)
     genes_edgeR_down <- genes_edgeR_down %>%
-      dplyr::filter(logFC < -log2fc_cutoff & FDR < p_cutoff) %>%
+      dplyr::filter(log2FoldChange < -log2fc_cutoff & padj < p_cutoff) %>%
       dplyr::select(Symbol) %>%
       unlist(use.names = F)
   } else {
     genes_edgeR_up<- genes_edgeR_up %>%
-      dplyr::filter(logFC > log2fc_cutoff  & PValue < p_cutoff) %>%
+      dplyr::filter(log2FoldChange > log2fc_cutoff  & pvalue < p_cutoff) %>%
       dplyr::select(Symbol) %>%
       unlist(use.names = F)
     genes_edgeR_down <- genes_edgeR_down %>%
-      dplyr::filter(logFC < -log2fc_cutoff & PValue < p_cutoff) %>%
+      dplyr::filter(log2FoldChange < -log2fc_cutoff & pvalue < p_cutoff) %>%
       dplyr::select(Symbol) %>%
       unlist(use.names = F)
   }
