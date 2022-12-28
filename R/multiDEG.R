@@ -134,13 +134,12 @@ DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column =
   message("")
   ##################################################################### edgeR ####################################################################
 
+  result[['edgeR']] <- result[['edgeR']] %>% dplyr::rename(log2FoldChange = logFC, pvalue = PValue, padj = FDR)
 
   ################################################################# Overlap DEGs #################################################################
   overlap_result <- overlap_DEGs(listDEGs = result)
   result[["overlap"]] <- overlap_result
   ################################################################# Overlap DEGs #################################################################
-
-  result[['edgeR']] <- result[['edgeR']] %>% dplyr::rename(log2FoldChange = logFC, pvalue = PValue, padj = FDR)
 
   return(result)
 }
