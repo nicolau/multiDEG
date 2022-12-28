@@ -11,7 +11,7 @@
 #'
 #' @return A list of data.frame for Wilcoxon rank-sum test, DESeq2 and edgeR
 #' @export
-DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column = "Class", adjust.method = "fdr", covariables = NULL, paired.samples.column = NULL) {
+DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column = "Class", adjust.method = c( "holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr", "none"), covariables = NULL, paired.samples.column = NULL) {
 
   # class.column          <- "Class"
   # adjust.method         <- "fdr"
@@ -160,22 +160,22 @@ overlap_DEGs <- function(listDEGs, p_cutoff = 0.05, log2fc_cutoff = 1, padjusted
   genes_wilcox_down <- listDEGs$`Wilcoxon rank-sum test` %>% tibble::rownames_to_column("Symbol")
   if(padjusted) {
     genes_wilcox_up <- genes_wilcox_up %>%
-      dplyr::filter(log2foldChange > log2fc_cutoff  & FDR < p_cutoff) %>%
+      dplyr::filter(log2FoldChange > log2fc_cutoff  & padj < p_cutoff) %>%
       dplyr::select(Symbol) %>%
       unlist(use.names = F)
 
     genes_wilcox_down <- genes_wilcox_down %>%
-      dplyr::filter(log2foldChange < -log2fc_cutoff & FDR < p_cutoff) %>%
+      dplyr::filter(log2FoldChange < -log2fc_cutoff & padj < p_cutoff) %>%
       dplyr::select(Symbol) %>%
       unlist(use.names = F)
   } else {
     genes_wilcox_up <- genes_wilcox_up %>%
-      dplyr::filter(log2foldChange > log2fc_cutoff  & pValues < p_cutoff) %>%
+      dplyr::filter(log2FoldChange > log2fc_cutoff  & pvalue < p_cutoff) %>%
       dplyr::select(Symbol) %>%
       unlist(use.names = F)
 
     genes_wilcox_down <- genes_wilcox_down %>%
-      dplyr::filter(log2foldChange < -log2fc_cutoff & pValues < p_cutoff) %>%
+      dplyr::filter(log2FoldChange < -log2fc_cutoff & pvalue < p_cutoff) %>%
       dplyr::select(Symbol) %>%
       unlist(use.names = F)
   }
