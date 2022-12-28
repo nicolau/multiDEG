@@ -49,7 +49,7 @@ DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column =
 
 
   if(length(covariables) > 1) {
-    phenodata <- phenodata magrittr::`%>%` tidyr::unite(Concatenate, c(covariables), remove = FALSE)
+    phenodata <- phenodata %>% tidyr::unite(Concatenate, c(covariables), remove = FALSE)
     model <- paste0("~0+", paste(c(paired.samples.column, "Concatenate", class.column), collapse = "+"))
   } else if(length(covariables) == 1) {
     model <- paste0("~0+", paste(c(paired.samples.column, covariables, class.column), collapse = "+"))
@@ -58,10 +58,10 @@ DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column =
   }
 
 
-  phenodata  <- phenodata magrittr::`%>%` dplyr::filter(Class %in% c(treated, nontreated))
-  raw.exp    <- raw.exp magrittr::`%>%` dplyr::select(phenodata$Sample)
+  phenodata  <- phenodata %>% dplyr::filter(Class %in% c(treated, nontreated))
+  raw.exp    <- raw.exp %>% dplyr::select(phenodata$Sample)
 
-  conditions <- factor(t(phenodata$Class)) magrittr::`%>%` relevel(conditions, ref = nontreated)
+  conditions <- factor(t(phenodata$Class)) %>% relevel(conditions, ref = nontreated)
 
   # Use this variable as covariates
   # gender     <- factor(t(phenodata$Gender))
@@ -79,7 +79,7 @@ DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column =
   y <- y[keep, keep.lib.sizes = FALSE]
   ## Perform TMM normalization and convert to CPM (Counts Per Million)
   y <- edgeR::calcNormFactors(y, method = "TMM")
-  norm.exp <- edgeR::cpm(y) magrittr::`%>%` as.data.frame()
+  norm.exp <- edgeR::cpm(y) %>% as.data.frame()
   # Run the Wilcoxon rank-sum test for each gene
   pvalues <- sapply(1:nrow(norm.exp), function(i){
     data <- cbind.data.frame(gene = as.numeric(t(norm.exp[i,])), conditions)
@@ -88,11 +88,11 @@ DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column =
   })
   fdr <- p.adjust(pvalues, method = adjust.method)
   # Calculate the fold-change for each gene
-  dataCon1 <- norm.exp magrittr::`%>%` dplyr::select(c(which(conditions==nontreated)))
-  dataCon2 <- norm.exp magrittr::`%>%` dplyr::select(c(which(conditions==treated)))
+  dataCon1 <- norm.exp %>% dplyr::select(c(which(conditions==nontreated)))
+  dataCon2 <- norm.exp %>% dplyr::select(c(which(conditions==treated)))
   foldChanges <- log2(rowMeans(dataCon2)/rowMeans(dataCon1))
   # Output results based on the FDR threshold 0.05
-  outRst <- data.frame(row.names = rownames(norm.exp), log2FoldChange = foldChanges, pvalue = pvalues, padj = fdr) magrittr::`%>%` na.omit(outRst)
+  outRst <- data.frame(row.names = rownames(norm.exp), log2FoldChange = foldChanges, pvalue = pvalues, padj = fdr) %>% na.omit(outRst)
 
   result[['Wilcoxon rank-sum test']] <- outRst
   message("Done!")
@@ -109,7 +109,7 @@ DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column =
   dds <- DESeq2::DESeq(dds)
   res <- DESeq2::results(dds, contrast = contrasts)
 
-  tTags <- res magrittr::`%>%` as.data.frame()
+  tTags <- res %>% as.data.frame()
   result[['DESeq2']] <- tTags
   message("Done!")
   message("")
@@ -140,7 +140,7 @@ DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column =
   result[["overlap"]] <- overlap_result
   ################################################################# Overlap DEGs #################################################################
 
-  result[['edgeR']] <- result[['edgeR']] magrittr::`%>%` dplyr::rename(log2FoldChange = logFC, pvalue = PValue, padj = FDR)
+  result[['edgeR']] <- result[['edgeR']] %>% dplyr::rename(log2FoldChange = logFC, pvalue = PValue, padj = FDR)
 
   return(result)
 }
@@ -156,73 +156,73 @@ DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column =
 #' @export
 overlap_DEGs <- function(listDEGs, p_cutoff = 0.05, log2fc_cutoff = 1, padjusted = F) {
 
-  genes_wilcox_up   <- listDEGs$`Wilcoxon rank-sum test` magrittr::`%>%` tibble::rownames_to_column("Symbol")
-  genes_wilcox_down <- listDEGs$`Wilcoxon rank-sum test` magrittr::`%>%` tibble::rownames_to_column("Symbol")
+  genes_wilcox_up   <- listDEGs$`Wilcoxon rank-sum test` %>% tibble::rownames_to_column("Symbol")
+  genes_wilcox_down <- listDEGs$`Wilcoxon rank-sum test` %>% tibble::rownames_to_column("Symbol")
   if(padjusted) {
-    genes_wilcox_up <- genes_wilcox_up magrittr::`%>%`
-      dplyr::filter(log2foldChange > log2fc_cutoff  & FDR < p_cutoff) magrittr::`%>%`
-      dplyr::select(Symbol) magrittr::`%>%`
+    genes_wilcox_up <- genes_wilcox_up %>%
+      dplyr::filter(log2foldChange > log2fc_cutoff  & FDR < p_cutoff) %>%
+      dplyr::select(Symbol) %>%
       unlist(use.names = F)
 
-    genes_wilcox_down <- genes_wilcox_down magrittr::`%>%`
-      dplyr::filter(log2foldChange < -log2fc_cutoff & FDR < p_cutoff) magrittr::`%>%`
-      dplyr::select(Symbol) magrittr::`%>%`
+    genes_wilcox_down <- genes_wilcox_down %>%
+      dplyr::filter(log2foldChange < -log2fc_cutoff & FDR < p_cutoff) %>%
+      dplyr::select(Symbol) %>%
       unlist(use.names = F)
   } else {
-    genes_wilcox_up <- genes_wilcox_up magrittr::`%>%`
-      dplyr::filter(log2foldChange > log2fc_cutoff  & pValues < p_cutoff) magrittr::`%>%`
-      dplyr::select(Symbol) magrittr::`%>%`
+    genes_wilcox_up <- genes_wilcox_up %>%
+      dplyr::filter(log2foldChange > log2fc_cutoff  & pValues < p_cutoff) %>%
+      dplyr::select(Symbol) %>%
       unlist(use.names = F)
 
-    genes_wilcox_down <- genes_wilcox_down magrittr::`%>%`
-      dplyr::filter(log2foldChange < -log2fc_cutoff & pValues < p_cutoff) magrittr::`%>%`
-      dplyr::select(Symbol) magrittr::`%>%`
+    genes_wilcox_down <- genes_wilcox_down %>%
+      dplyr::filter(log2foldChange < -log2fc_cutoff & pValues < p_cutoff) %>%
+      dplyr::select(Symbol) %>%
       unlist(use.names = F)
   }
 
 
-  genes_edgeR_up   <- listDEGs$edgeR magrittr::`%>%` tibble::rownames_to_column("Symbol")
-  genes_edgeR_down <- listDEGs$edgeR magrittr::`%>%` tibble::rownames_to_column("Symbol")
+  genes_edgeR_up   <- listDEGs$edgeR %>% tibble::rownames_to_column("Symbol")
+  genes_edgeR_down <- listDEGs$edgeR %>% tibble::rownames_to_column("Symbol")
   if(padjusted) {
-    genes_edgeR_up<- genes_edgeR_up magrittr::`%>%`
-      dplyr::filter(logFC > log2fc_cutoff  & FDR < p_cutoff) magrittr::`%>%`
-      dplyr::select(Symbol) magrittr::`%>%`
+    genes_edgeR_up<- genes_edgeR_up %>%
+      dplyr::filter(logFC > log2fc_cutoff  & FDR < p_cutoff) %>%
+      dplyr::select(Symbol) %>%
       unlist(use.names = F)
-    genes_edgeR_down <- genes_edgeR_down magrittr::`%>%`
-      dplyr::filter(logFC < -log2fc_cutoff & FDR < p_cutoff) magrittr::`%>%`
-      dplyr::select(Symbol) magrittr::`%>%`
+    genes_edgeR_down <- genes_edgeR_down %>%
+      dplyr::filter(logFC < -log2fc_cutoff & FDR < p_cutoff) %>%
+      dplyr::select(Symbol) %>%
       unlist(use.names = F)
   } else {
-    genes_edgeR_up<- genes_edgeR_up magrittr::`%>%`
-      dplyr::filter(logFC > log2fc_cutoff  & PValue < p_cutoff) magrittr::`%>%`
-      dplyr::select(Symbol) magrittr::`%>%`
+    genes_edgeR_up<- genes_edgeR_up %>%
+      dplyr::filter(logFC > log2fc_cutoff  & PValue < p_cutoff) %>%
+      dplyr::select(Symbol) %>%
       unlist(use.names = F)
-    genes_edgeR_down <- genes_edgeR_down magrittr::`%>%`
-      dplyr::filter(logFC < -log2fc_cutoff & PValue < p_cutoff) magrittr::`%>%`
-      dplyr::select(Symbol) magrittr::`%>%`
+    genes_edgeR_down <- genes_edgeR_down %>%
+      dplyr::filter(logFC < -log2fc_cutoff & PValue < p_cutoff) %>%
+      dplyr::select(Symbol) %>%
       unlist(use.names = F)
   }
 
 
-  genes_DESeq2_up   <- listDEGs$DESeq2 magrittr::`%>%` tibble::rownames_to_column("Symbol")
-  genes_DESeq2_down <- listDEGs$DESeq2 magrittr::`%>%` tibble::rownames_to_column("Symbol")
+  genes_DESeq2_up   <- listDEGs$DESeq2 %>% tibble::rownames_to_column("Symbol")
+  genes_DESeq2_down <- listDEGs$DESeq2 %>% tibble::rownames_to_column("Symbol")
   if(padjusted) {
-    genes_DESeq2_up <- genes_DESeq2_up magrittr::`%>%`
-      dplyr::filter(log2FoldChange > log2fc_cutoff  & padj < p_cutoff) magrittr::`%>%`
-      dplyr::select(Symbol) magrittr::`%>%`
+    genes_DESeq2_up <- genes_DESeq2_up %>%
+      dplyr::filter(log2FoldChange > log2fc_cutoff  & padj < p_cutoff) %>%
+      dplyr::select(Symbol) %>%
       unlist(use.names = F)
-    genes_DESeq2_down <- genes_DESeq2_down magrittr::`%>%`
-      dplyr::filter(log2FoldChange < -log2fc_cutoff & padj < p_cutoff) magrittr::`%>%`
-      dplyr::select(Symbol) magrittr::`%>%`
+    genes_DESeq2_down <- genes_DESeq2_down %>%
+      dplyr::filter(log2FoldChange < -log2fc_cutoff & padj < p_cutoff) %>%
+      dplyr::select(Symbol) %>%
       unlist(use.names = F)
   } else {
-    genes_DESeq2_up <- genes_DESeq2_up magrittr::`%>%`
-      dplyr::filter(log2FoldChange > log2fc_cutoff  & pvalue < p_cutoff) magrittr::`%>%`
-      dplyr::select(Symbol) magrittr::`%>%`
+    genes_DESeq2_up <- genes_DESeq2_up %>%
+      dplyr::filter(log2FoldChange > log2fc_cutoff  & pvalue < p_cutoff) %>%
+      dplyr::select(Symbol) %>%
       unlist(use.names = F)
-    genes_DESeq2_down <- genes_DESeq2_down magrittr::`%>%`
-      dplyr::filter(log2FoldChange < -log2fc_cutoff & pvalue < p_cutoff) magrittr::`%>%`
-      dplyr::select(Symbol) magrittr::`%>%`
+    genes_DESeq2_down <- genes_DESeq2_down %>%
+      dplyr::filter(log2FoldChange < -log2fc_cutoff & pvalue < p_cutoff) %>%
+      dplyr::select(Symbol) %>%
       unlist(use.names = F)
   }
 
@@ -366,24 +366,24 @@ get_DEG_symbols <- function(listDEGs, method = c("Wilcox", "DESeq2", "edgeR"), d
   }
 
   if(direction == "up") {
-    symbols <- table_DEGs magrittr::`%>%`
-      dplyr::filter(log2FoldChange > log2fc_cutoff) magrittr::`%>%`
+    symbols <- table_DEGs %>%
+      dplyr::filter(log2FoldChange > log2fc_cutoff) %>%
       tibble::rownames_to_column("Symbol")
   } else {
-    symbols <- table_DEGs magrittr::`%>%`
-      dplyr::filter(log2FoldChange < -log2fc_cutoff) magrittr::`%>%`
+    symbols <- table_DEGs %>%
+      dplyr::filter(log2FoldChange < -log2fc_cutoff) %>%
       tibble::rownames_to_column("Symbol")
   }
 
   if(padjusted) {
-    symbols <- symbols magrittr::`%>%`
-      dplyr::filter(padj < p_cutoff) magrittr::`%>%`
-      dplyr::select(Symbol) magrittr::`%>%`
+    symbols <- symbols %>%
+      dplyr::filter(padj < p_cutoff) %>%
+      dplyr::select(Symbol) %>%
       unlist(use.names = F)
   } else {
-    symbols <- symbols magrittr::`%>%`
-      dplyr::filter(pvalue < p_cutoff) magrittr::`%>%`
-      dplyr::select(Symbol) magrittr::`%>%`
+    symbols <- symbols %>%
+      dplyr::filter(pvalue < p_cutoff) %>%
+      dplyr::select(Symbol) %>%
       unlist(use.names = F)
   }
 
@@ -436,24 +436,24 @@ log2fc_correlation_plot <- function(listDEGs, method_one = c("Wilcox", "DESeq2",
 
   if(method_one != method_two) {
     if(method_one == "wilcox") {
-      table_one <- listDEGs$`Wilcoxon rank-sum test` magrittr::`%>%` tibble::rownames_to_column("Symbol")
+      table_one <- listDEGs$`Wilcoxon rank-sum test` %>% tibble::rownames_to_column("Symbol")
       xlabel <- "Wilcox"
     } else if(method_one == "DESeq2") {
-      table_one <- listDEGs$DESeq2 magrittr::`%>%` tibble::rownames_to_column("Symbol")
+      table_one <- listDEGs$DESeq2 %>% tibble::rownames_to_column("Symbol")
       xlabel <- "DESeq2"
     } else {
-      table_one <- listDEGs$edgeR magrittr::`%>%` tibble::rownames_to_column("Symbol")
+      table_one <- listDEGs$edgeR %>% tibble::rownames_to_column("Symbol")
       xlabel <- "edgeR"
     }
 
     if(method_two == "wilcox") {
-      table_two <- listDEGs$`Wilcoxon rank-sum test` magrittr::`%>%` tibble::rownames_to_column("Symbol")
+      table_two <- listDEGs$`Wilcoxon rank-sum test` %>% tibble::rownames_to_column("Symbol")
       ylabel <- "Wilcox"
     } else if(method_two == "DESeq2") {
-      table_two <- listDEGs$DESeq2 magrittr::`%>%` tibble::rownames_to_column("Symbol")
+      table_two <- listDEGs$DESeq2 %>% tibble::rownames_to_column("Symbol")
       ylabel <- "DESeq2"
     } else {
-      table_two <- listDEGs$edgeR magrittr::`%>%` tibble::rownames_to_column("Symbol")
+      table_two <- listDEGs$edgeR %>% tibble::rownames_to_column("Symbol")
       ylabel <- "edgeR"
     }
 
@@ -485,24 +485,24 @@ save_ranked_table <- function(listDEGs, method = c("Wilcox", "DESeq2", "edgeR"),
 
   table_DEGs <- NULL
   if(method == "wilcox") {
-    table_DEGs <- listDEGs$`Wilcoxon rank-sum test` magrittr::`%>%` tibble::rownames_to_column("Symbol")
+    table_DEGs <- listDEGs$`Wilcoxon rank-sum test` %>% tibble::rownames_to_column("Symbol")
   } else if(method == "DESeq2") {
-    table_DEGs <- listDEGs$DESeq2 magrittr::`%>%` tibble::rownames_to_column("Symbol")
+    table_DEGs <- listDEGs$DESeq2 %>% tibble::rownames_to_column("Symbol")
   } else {
-    table_DEGs <- listDEGs$edgeR magrittr::`%>%` tibble::rownames_to_column("Symbol")
+    table_DEGs <- listDEGs$edgeR %>% tibble::rownames_to_column("Symbol")
   }
 
   if(padjusted) {
-    table_DEGs <- table_DEGs magrittr::`%>%`
-      tibble::rownames_to_column("Symbol") magrittr::`%>%`
-      dplyr::mutate(Rank = log2FoldChange * -log10(padj)) magrittr::`%>%`
-      dplyr::select(Symbol, Rank) magrittr::`%>%`
+    table_DEGs <- table_DEGs %>%
+      tibble::rownames_to_column("Symbol") %>%
+      dplyr::mutate(Rank = log2FoldChange * -log10(padj)) %>%
+      dplyr::select(Symbol, Rank) %>%
       dplyr::arrange(-Rank)
   } else {
-    table_DEGs <- table_DEGs magrittr::`%>%`
-      tibble::rownames_to_column("Symbol") magrittr::`%>%`
-      dplyr::mutate(Rank = log2FoldChange * -log10(pvalue)) magrittr::`%>%`
-      dplyr::select(Symbol, Rank) magrittr::`%>%`
+    table_DEGs <- table_DEGs %>%
+      tibble::rownames_to_column("Symbol") %>%
+      dplyr::mutate(Rank = log2FoldChange * -log10(pvalue)) %>%
+      dplyr::select(Symbol, Rank) %>%
       dplyr::arrange(-Rank)
   }
 
