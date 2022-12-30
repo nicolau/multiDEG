@@ -331,13 +331,13 @@ plot <- function(listDEGs, type = c("up", "down")) {
 #' @return A complete list of genes, log2FC, pvalue, and padj
 #' @export
 get_DEG_table <- function(listDEGs, method = c("Wilcox", "DESeq2", "edgeR")) {
-  table <- NULL
+  table_DEGs <- NULL
   if(method == "Wilcox") {
-    table <- results$`Wilcoxon rank-sum test`
+    table_DEGs <- results$`Wilcoxon rank-sum test`
   } else {
-    table <- results[[method]]
+    table_DEGs <- results[[method]]
   }
-  return(table)
+  return(table_DEGs)
 }
 
 
@@ -387,7 +387,7 @@ get_DEG_symbols <- function(listDEGs, method = c("Wilcox", "DESeq2", "edgeR"), d
       unlist(use.names = F)
   }
 
-  return(table)
+  return(symbols)
 }
 
 #' Export DEG tables for a specific DE method
@@ -399,6 +399,9 @@ get_DEG_symbols <- function(listDEGs, method = c("Wilcox", "DESeq2", "edgeR"), d
 #' @return A histogram plot for pvalues or padj
 #' @export
 pvalue_distribution_plot <- function(listDEGs, method = c("Wilcox", "DESeq2", "edgeR"), padjusted = F) {
+
+  table_DEGs <- NULL
+
   if(method == "wilcox") {
     table_DEGs <- listDEGs$`Wilcoxon rank-sum test`
   } else if(method == "DESeq2") {
@@ -431,6 +434,9 @@ pvalue_distribution_plot <- function(listDEGs, method = c("Wilcox", "DESeq2", "e
 #' @return A scatter plot comparing two different DE methods
 #' @export
 log2fc_correlation_plot <- function(listDEGs, method_one = c("Wilcox", "DESeq2", "edgeR"), method_two = c("Wilcox", "DESeq2", "edgeR")) {
+
+  table_one <- NULL
+  table_two <- NULL
 
   if(method_one != method_two) {
     if(method_one == "wilcox") {
@@ -482,6 +488,7 @@ log2fc_correlation_plot <- function(listDEGs, method_one = c("Wilcox", "DESeq2",
 save_ranked_table <- function(listDEGs, method = c("Wilcox", "DESeq2", "edgeR"), padjusted = FALSE) {
 
   table_DEGs <- NULL
+
   if(method == "wilcox") {
     table_DEGs <- listDEGs$`Wilcoxon rank-sum test` %>% tibble::rownames_to_column("Symbol")
   } else if(method == "DESeq2") {
