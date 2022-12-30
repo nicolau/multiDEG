@@ -333,9 +333,9 @@ plot <- function(listDEGs, type = c("up", "down")) {
 get_DEG_table <- function(listDEGs, method = c("Wilcox", "DESeq2", "edgeR")) {
   table_DEGs <- NULL
   if(method == "Wilcox") {
-    table_DEGs <- results$`Wilcoxon rank-sum test`
+    table_DEGs <- listDEGs$`Wilcoxon rank-sum test`
   } else {
-    table_DEGs <- results[[method]]
+    table_DEGs <- listDEGs[[method]]
   }
   return(table_DEGs)
 }
@@ -439,7 +439,7 @@ log2fc_correlation_plot <- function(listDEGs, method_one = c("Wilcox", "DESeq2",
   table_two <- NULL
 
   if(method_one != method_two) {
-    if(method_one == "wilcox") {
+    if(method_one == "Wilcox") {
       table_one <- listDEGs$`Wilcoxon rank-sum test` %>% tibble::rownames_to_column("Symbol")
       xlabel <- "Wilcox"
     } else if(method_one == "DESeq2") {
@@ -450,7 +450,7 @@ log2fc_correlation_plot <- function(listDEGs, method_one = c("Wilcox", "DESeq2",
       xlabel <- "edgeR"
     }
 
-    if(method_two == "wilcox") {
+    if(method_two == "Wilcox") {
       table_two <- listDEGs$`Wilcoxon rank-sum test` %>% tibble::rownames_to_column("Symbol")
       ylabel <- "Wilcox"
     } else if(method_two == "DESeq2") {
@@ -499,13 +499,13 @@ save_ranked_table <- function(listDEGs, method = c("Wilcox", "DESeq2", "edgeR"),
 
   if(padjusted) {
     table_DEGs <- table_DEGs %>%
-      tibble::rownames_to_column("Symbol") %>%
+      # tibble::rownames_to_column("Symbol") %>%
       dplyr::mutate(Rank = log2FoldChange * -log10(padj)) %>%
       dplyr::select(Symbol, Rank) %>%
       dplyr::arrange(-Rank)
   } else {
     table_DEGs <- table_DEGs %>%
-      tibble::rownames_to_column("Symbol") %>%
+      # tibble::rownames_to_column("Symbol") %>%
       dplyr::mutate(Rank = log2FoldChange * -log10(pvalue)) %>%
       dplyr::select(Symbol, Rank) %>%
       dplyr::arrange(-Rank)
