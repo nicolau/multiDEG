@@ -7,7 +7,7 @@
 #' @param class.column A string contatining the name of column where treated and nontreated will be extracted
 #' @param adjust.method Merhod of multiple comparison will be used for Wilcoxon rank-sum test pvalues.
 #' @param covariables A vector list of variables should be used to covariates adjusment.
-#' @param paired.samples A boolean variable to indicate paired-sample comparison
+#' @param paired.samples.column A boolean variable to indicate paired-sample comparison
 #'
 #' @return A list of data.frame for Wilcoxon rank-sum test, DESeq2 and edgeR
 #' @export
@@ -134,15 +134,16 @@ DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column =
   message("")
   ##################################################################### edgeR ####################################################################
 
-  result[['edgeR']] <- result[['edgeR']] %>% dplyr::rename(log2FoldChange = logFC, pvalue = PValue, padj = FDR)
+  result[['edgeR']]   <- result[['edgeR']] %>% dplyr::rename(log2FoldChange = logFC, pvalue = PValue, padj = FDR)
 
   ################################################################# Overlap DEGs #################################################################
-  overlap_result <- overlap_DEGs(listDEGs = result)
+  overlap_result      <- overlap_DEGs(listDEGs = result)
   result[["overlap"]] <- overlap_result
   ################################################################# Overlap DEGs #################################################################
 
   return(result)
 }
+
 
 #' Calculates overlapping genes between Wilcox rank-sum test, DESeq2 and edgeR DE methods
 #'
@@ -151,7 +152,7 @@ DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column =
 #' @param log2fc_cutoff cut-off for log2 Fold-change values
 #' @param padjusted Boolean value to use or not adjusted p-values for p_cutoff
 #'
-#' @return A list of data.frame for Wilcoxon rank-sum test, DESeq2 and edgeR
+#' @return A list of Venn Diagram plots for up- and down-regulated genes
 #' @export
 overlap_DEGs <- function(listDEGs, p_cutoff = 0.05, log2fc_cutoff = 1, padjusted = F) {
 
@@ -238,12 +239,12 @@ overlap_DEGs <- function(listDEGs, p_cutoff = 0.05, log2fc_cutoff = 1, padjusted
 
 #' Plot triple venn diagram
 #'
-#' @param listDEGs list of results from DEG_analysis
-#' @param p_cutoff cut-off for p-value
-#' @param log2fc_cutoff cut-off for log2 Fold-change values
-#' @param padjusted Boolean value to use or not adjusted p-values for p_cutoff
+#' @param a1 elements for the group 1
+#' @param a2 elements for the group 2
+#' @param a3 elements for the group 3
+#' @param labels labels for each groups
 #'
-#' @return A list of data.frame for Wilcoxon rank-sum test, DESeq2 and edgeR
+#' @return A list contains a Venn Diagram plot, and list of genes overlapped and exclusive for each group
 plot.triple.venn <- function(a1 = c( "a", "b", "c", "d", "e", "t", "g", "h" ),
                              a2 = c( "x", "b", "c", "d", "e", "f", "g", "z" ),
                              a3 = c( "y", "b", "c", "d", "x", "f", "g", "h" ),
@@ -305,14 +306,12 @@ plot.triple.venn <- function(a1 = c( "a", "b", "c", "d", "e", "t", "g", "h" ),
   return(result)
 }
 
+
 #' Plot function
 #'
 #' @param listDEGs list of results from DEG_analysis
-#' @param p_cutoff cut-off for p-value
-#' @param log2fc_cutoff cut-off for log2 Fold-change values
-#' @param padjusted Boolean value to use or not adjusted p-values for p_cutoff
+#' @param type plot up- or down-regulated genes
 #'
-#' @return A list of data.frame for Wilcoxon rank-sum test, DESeq2 and edgeR
 #' @export
 plot <- function(listDEGs, type = c("up", "down")) {
   if(!is.null(dev.list())) { dev.off() }
@@ -323,14 +322,13 @@ plot <- function(listDEGs, type = c("up", "down")) {
   }
 }
 
+
 #' Export DEG tables for a specific DE method
 #'
 #' @param listDEGs list of results from DEG_analysis
-#' @param p_cutoff cut-off for p-value
-#' @param log2fc_cutoff cut-off for log2 Fold-change values
-#' @param padjusted Boolean value to use or not adjusted p-values for p_cutoff
+#' @param method DE method
 #'
-#' @return A list of data.frame for Wilcoxon rank-sum test, DESeq2 and edgeR
+#' @return A complete list of genes, log2FC, pvalue, and padj
 #' @export
 get_DEG_table <- function(listDEGs, method = c("Wilcox", "DESeq2", "edgeR")) {
   table <- NULL
@@ -342,14 +340,17 @@ get_DEG_table <- function(listDEGs, method = c("Wilcox", "DESeq2", "edgeR")) {
   return(table)
 }
 
+
 #' Export DEG tables for a specific DE method
 #'
 #' @param listDEGs list of results from DEG_analysis
+#' @param method DE method
+#' @param direction Direction of differential expression (up or down)
 #' @param p_cutoff cut-off for p-value
 #' @param log2fc_cutoff cut-off for log2 Fold-change values
 #' @param padjusted Boolean value to use or not adjusted p-values for p_cutoff
 #'
-#' @return A list of data.frame for Wilcoxon rank-sum test, DESeq2 and edgeR
+#' @return A vector of symbols
 #' @export
 get_DEG_symbols <- function(listDEGs, method = c("Wilcox", "DESeq2", "edgeR"), direction = c("up", "down"),  p_cutoff = 0.05, log2fc_cutoff = 1, padjusted = F) {
 
@@ -392,11 +393,10 @@ get_DEG_symbols <- function(listDEGs, method = c("Wilcox", "DESeq2", "edgeR"), d
 #' Export DEG tables for a specific DE method
 #'
 #' @param listDEGs list of results from DEG_analysis
-#' @param p_cutoff cut-off for p-value
-#' @param log2fc_cutoff cut-off for log2 Fold-change values
+#' @param method DE method
 #' @param padjusted Boolean value to use or not adjusted p-values for p_cutoff
 #'
-#' @return A list of data.frame for Wilcoxon rank-sum test, DESeq2 and edgeR
+#' @return A histogram plot for pvalues or padj
 #' @export
 pvalue_distribution_plot <- function(listDEGs, method = c("Wilcox", "DESeq2", "edgeR"), padjusted = F) {
   if(method == "wilcox") {
@@ -425,11 +425,10 @@ pvalue_distribution_plot <- function(listDEGs, method = c("Wilcox", "DESeq2", "e
 #' Export DEG tables for a specific DE method
 #'
 #' @param listDEGs list of results from DEG_analysis
-#' @param p_cutoff cut-off for p-value
-#' @param log2fc_cutoff cut-off for log2 Fold-change values
-#' @param padjusted Boolean value to use or not adjusted p-values for p_cutoff
+#' @param method_one DE method for x-axis
+#' @param method_two DE method for y-axis
 #'
-#' @return A list of data.frame for Wilcoxon rank-sum test, DESeq2 and edgeR
+#' @return A scatter plot comparing two different DE methods
 #' @export
 log2fc_correlation_plot <- function(listDEGs, method_one = c("Wilcox", "DESeq2", "edgeR"), method_two = c("Wilcox", "DESeq2", "edgeR")) {
 
@@ -458,27 +457,27 @@ log2fc_correlation_plot <- function(listDEGs, method_one = c("Wilcox", "DESeq2",
 
     table_merge <- dplyr::inner_join(x = table_one, y = table_two, by = "Symbol")
 
+    p <- ggplot2::ggplot(table_merge, aes(x = log2FoldChange.x, y = log2FoldChange.y)) +
+      ggplot2::geom_point() +
+      ggplot2::theme_classic() +
+      xlab(xlabel) +
+      ylab(ylabel)
+
+    return(p)
+
+  } else {
+    stop("Please, select different methods for method_one and method_two parameters.")
   }
-
-  p <- ggplot2::ggplot(table_merge, aes(x = log2FoldChange.x, y = log2FoldChange.y)) +
-    ggplot2::geom_point() +
-    ggplot2::theme_classic() +
-    xlab(xlabel) +
-    ylab(ylabel)
-
-  return(p)
-
 }
 
 
 #' Export DEG tables for a specific DE method
 #'
 #' @param listDEGs list of results from DEG_analysis
-#' @param p_cutoff cut-off for p-value
-#' @param log2fc_cutoff cut-off for log2 Fold-change values
+#' @param method DE method
 #' @param padjusted Boolean value to use or not adjusted p-values for p_cutoff
 #'
-#' @return A list of data.frame for Wilcoxon rank-sum test, DESeq2 and edgeR
+#' @return A ranked table for GSEA tools
 #' @export
 save_ranked_table <- function(listDEGs, method = c("Wilcox", "DESeq2", "edgeR"), padjusted = FALSE) {
 

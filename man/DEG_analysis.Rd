@@ -10,7 +10,8 @@ DEG_analysis(
   treated,
   nontreated,
   class.column = "Class",
-  adjust.method = "fdr",
+  adjust.method = c("holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr",
+    "none"),
   covariables = NULL,
   paired.samples.column = NULL
 )
@@ -30,7 +31,7 @@ DEG_analysis(
 
 \item{covariables}{A vector list of variables should be used to covariates adjusment.}
 
-\item{paired.samples}{A boolean variable to indicate paired-sample comparison}
+\item{paired.samples.column}{A boolean variable to indicate paired-sample comparison}
 }
 \value{
 A list of data.frame for Wilcoxon rank-sum test, DESeq2 and edgeR

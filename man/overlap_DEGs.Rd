@@ -16,7 +16,7 @@ overlap_DEGs(listDEGs, p_cutoff = 0.05, log2fc_cutoff = 1, padjusted = F)
 \item{padjusted}{Boolean value to use or not adjusted p-values for p_cutoff}
 }
 \value{
-A list of data.frame for Wilcoxon rank-sum test, DESeq2 and edgeR
+A list of Venn Diagram plots for up- and down-regulated genes
 }
 \description{
 Calculates overlapping genes between Wilcox rank-sum test, DESeq2 and edgeR DE methods

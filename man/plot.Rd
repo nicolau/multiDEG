@@ -9,14 +9,7 @@ plot(listDEGs, type = c("up", "down"))
 \arguments{
 \item{listDEGs}{list of results from DEG_analysis}
 
-\item{p_cutoff}{cut-off for p-value}
-
-\item{log2fc_cutoff}{cut-off for log2 Fold-change values}
-
-\item{padjusted}{Boolean value to use or not adjusted p-values for p_cutoff}
-}
-\value{
-A list of data.frame for Wilcoxon rank-sum test, DESeq2 and edgeR
+\item{type}{plot up- or down-regulated genes}
 }
 \description{
 Plot function

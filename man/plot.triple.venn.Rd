@@ -12,16 +12,16 @@ plot.triple.venn(
 )
 }
 \arguments{
-\item{listDEGs}{list of results from DEG_analysis}
+\item{a1}{elements for the group 1}
 
-\item{p_cutoff}{cut-off for p-value}
+\item{a2}{elements for the group 2}
 
-\item{log2fc_cutoff}{cut-off for log2 Fold-change values}
+\item{a3}{elements for the group 3}
 
-\item{padjusted}{Boolean value to use or not adjusted p-values for p_cutoff}
+\item{labels}{labels for each groups}
 }
 \value{
-A list of data.frame for Wilcoxon rank-sum test, DESeq2 and edgeR
+A list contains a Venn Diagram plot, and list of genes overlapped and exclusive for each group
 }
 \description{
 Plot triple venn diagram

@@ -13,14 +13,12 @@ log2fc_correlation_plot(
 \arguments{
 \item{listDEGs}{list of results from DEG_analysis}
 
-\item{p_cutoff}{cut-off for p-value}
+\item{method_one}{DE method for x-axis}
 
-\item{log2fc_cutoff}{cut-off for log2 Fold-change values}
-
-\item{padjusted}{Boolean value to use or not adjusted p-values for p_cutoff}
+\item{method_two}{DE method for y-axis}
 }
 \value{
-A list of data.frame for Wilcoxon rank-sum test, DESeq2 and edgeR
+A scatter plot comparing two different DE methods
 }
 \description{
 Export DEG tables for a specific DE method
