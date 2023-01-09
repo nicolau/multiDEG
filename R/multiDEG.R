@@ -94,7 +94,7 @@ DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column =
   # Output results based on the FDR threshold 0.05
   outRst <- data.frame(row.names = rownames(norm.exp), log2FoldChange = foldChanges, pvalue = pvalues, padj = fdr) %>% na.omit(outRst)
 
-  result[['Wilcoxon rank-sum test']] <- outRst
+  result[['Wilcoxon']] <- outRst
   message("Done!")
   message("")
   ############################################################ Wilcoxon rank-sum test ############################################################
@@ -156,8 +156,8 @@ DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column =
 #' @export
 overlap_DEGs <- function(listDEGs, p_cutoff = 0.05, log2fc_cutoff = 1, padjusted = F) {
 
-  genes_wilcox_up   <- listDEGs$`Wilcoxon rank-sum test` %>% tibble::rownames_to_column("Symbol")
-  genes_wilcox_down <- listDEGs$`Wilcoxon rank-sum test` %>% tibble::rownames_to_column("Symbol")
+  genes_wilcox_up   <- listDEGs$Wilcoxon %>% tibble::rownames_to_column("Symbol")
+  genes_wilcox_down <- listDEGs$Wilcoxon %>% tibble::rownames_to_column("Symbol")
   if(padjusted) {
     genes_wilcox_up <- genes_wilcox_up %>%
       dplyr::filter(log2FoldChange > log2fc_cutoff  & padj < p_cutoff) %>%
@@ -333,7 +333,7 @@ plot <- function(listDEGs, type = c("up", "down")) {
 get_DEG_table <- function(listDEGs, method = c("Wilcox", "DESeq2", "edgeR")) {
   table_DEGs <- NULL
   if(method == "Wilcox") {
-    table_DEGs <- listDEGs$`Wilcoxon rank-sum test`
+    table_DEGs <- listDEGs$Wilcoxon
   } else {
     table_DEGs <- listDEGs[[method]]
   }
@@ -358,7 +358,7 @@ get_DEG_symbols <- function(listDEGs, method = c("Wilcox", "DESeq2", "edgeR"), d
   table_DEGs <- NULL
 
   if(method == "Wilcox") {
-    table_DEGs <- listDEGs$`Wilcoxon rank-sum test`
+    table_DEGs <- listDEGs$Wilcoxon
   } else if(method == "DESeq2") {
     table_DEGs <- listDEGs$DESeq2
   } else {
@@ -403,7 +403,7 @@ pvalue_distribution_plot <- function(listDEGs, method = c("Wilcox", "DESeq2", "e
   table_DEGs <- NULL
 
   if(method == "wilcox") {
-    table_DEGs <- listDEGs$`Wilcoxon rank-sum test`
+    table_DEGs <- listDEGs$Wilcoxon
   } else if(method == "DESeq2") {
     table_DEGs <- listDEGs$DESeq2
   } else {
@@ -440,7 +440,7 @@ log2fc_correlation_plot <- function(listDEGs, method_one = c("Wilcox", "DESeq2",
 
   if(method_one != method_two) {
     if(method_one == "Wilcox") {
-      table_one <- listDEGs$`Wilcoxon rank-sum test` %>% tibble::rownames_to_column("Symbol")
+      table_one <- listDEGs$Wilcoxon %>% tibble::rownames_to_column("Symbol")
       xlabel <- "Wilcox"
     } else if(method_one == "DESeq2") {
       table_one <- listDEGs$DESeq2 %>% tibble::rownames_to_column("Symbol")
@@ -451,7 +451,7 @@ log2fc_correlation_plot <- function(listDEGs, method_one = c("Wilcox", "DESeq2",
     }
 
     if(method_two == "Wilcox") {
-      table_two <- listDEGs$`Wilcoxon rank-sum test` %>% tibble::rownames_to_column("Symbol")
+      table_two <- listDEGs$Wilcoxon %>% tibble::rownames_to_column("Symbol")
       ylabel <- "Wilcox"
     } else if(method_two == "DESeq2") {
       table_two <- listDEGs$DESeq2 %>% tibble::rownames_to_column("Symbol")
@@ -490,7 +490,7 @@ save_ranked_table <- function(listDEGs, method = c("Wilcox", "DESeq2", "edgeR"),
   table_DEGs <- NULL
 
   if(method == "wilcox") {
-    table_DEGs <- listDEGs$`Wilcoxon rank-sum test` %>% tibble::rownames_to_column("Symbol")
+    table_DEGs <- listDEGs$Wilcoxon %>% tibble::rownames_to_column("Symbol")
   } else if(method == "DESeq2") {
     table_DEGs <- listDEGs$DESeq2 %>% tibble::rownames_to_column("Symbol")
   } else {
