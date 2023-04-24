@@ -1,5 +1,5 @@
 # multiDEG
-R package to perform DEG analysis using Wilcox rank test, DEGseq2, and edgeR methods
+R package to perform DEG analysis using Wilcox rank test, DESeq2, and edgeR methods
 
 # Installing
 
