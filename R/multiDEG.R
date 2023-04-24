@@ -11,17 +11,19 @@
 #'
 #' @return A list of data.frame for Wilcoxon rank-sum test, DESeq2 and edgeR
 #' @export
-DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column = "Class", adjust.method = c( "holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr", "none"), covariables = NULL, paired.samples.column = NULL) {
+DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column = "Class",
+                         adjust.method = c( "holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr", "none"),
+                         covariables = NULL, paired.samples.column = NULL) {
 
-  class.column          <- "Class"
-  adjust.method         <- "fdr"
-  treated               <- "INF"
-  nontreated            <- "CTRL"
-  covariables           <- c("Gender")
-  covariables           <- NULL
-  paired.samples.column <- NULL
-  data(phenodata)
-  data(raw.exp)
+  # class.column          <- "Class"
+  # adjust.method         <- "fdr"
+  # treated               <- "INF"
+  # nontreated            <- "CTRL"
+  # covariables           <- c("Gender")
+  # covariables           <- NULL
+  # paired.samples.column <- NULL
+  # data(phenodata)
+  # data(raw.exp)
   #
   # library(tidyverse)
   # library(DESeq2)
@@ -65,14 +67,14 @@ DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column =
 
   conditions <- factor(t(phenodata$Class)) %>% relevel(conditions, ref = nontreated)
 
-  gender <- phenodata$Gender
-
-  # Use this variable as covariates
-  # gender     <- factor(t(phenodata$Gender))
-
   if(!identical(colnames(raw.exp), phenodata$Sample)) {
     stop("Error: colnames(raw.exp) should be the same of phenodata$Sample")
   }
+
+
+
+
+
 
   ############################################################ Wilcoxon rank-sum test ############################################################
   message("Calculating DE genes using Wilcoxon rank-sum test...")
@@ -86,10 +88,8 @@ DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column =
   norm.exp <- edgeR::cpm(y) %>% as.data.frame()
   # Run the Wilcoxon rank-sum test for each gene
   pvalues <- sapply(1:nrow(norm.exp), function(i){
-    i <- 1
-    data <- cbind.data.frame(gene = as.numeric(t(norm.exp[i,])), conditions, gender)
-    p <- wilcox.test(gene~conditions+gender, data)$p.value
-    lm(gene~conditions+gender, data = data)$p.value
+    data <- cbind.data.frame(gene = as.numeric(t(norm.exp[i,])), conditions)
+    p <- wilcox.test(gene~conditions, data)$p.value
     return(p)
   })
   fdr <- p.adjust(pvalues, method = adjust.method)
@@ -106,10 +106,13 @@ DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column =
   ############################################################ Wilcoxon rank-sum test ############################################################
 
 
+
+
+
+
   #################################################################### DESeq2 ####################################################################
   message("Calculating DE genes using DESeq2...")
   contrasts <- c("Class", treated, nontreated)
-  # dds <- DESeq2::DESeqDataSetFromMatrix(countData = raw.exp, colData = phenodata, design = ~ Class)
   dds <- DESeq2::DESeqDataSetFromMatrix(countData = raw.exp, colData = phenodata, design = as.formula(model))
 
   dds <- DESeq2::DESeq(dds)
@@ -122,18 +125,36 @@ DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column =
   #################################################################### DESeq2 ####################################################################
 
 
+
+
+
+
   ##################################################################### edgeR ####################################################################
   message("Calculating DE genes using edgeR...")
+  if(length(covariables) > 0) {
+    phenodata <- phenodata %>% tidyr::unite(Concatenate, c(covariables), remove = FALSE)
+    model <- paste0("~0+", paste(c(paired.samples.column, paste0("Cov", 1:length(covariables)), class.column), collapse = "+"))
+    contrast_vector <- c(-1, 1, 0)
+    for(i in length(covariables)) {
+      assign(paste0("Cov", i), phenodata[, covariables[i]] %>% unlist(use.names = F))
+    }
+  }else if(!is.null(paired.samples.column)) {
+    model <- paste0("~0+", paste(c(paired.samples.column, class.column), collapse = "+"))
+    contrast_vector <- c(-1, 1, 0)
+  } else {
+    model <- paste0("~0+", paste(c(paired.samples.column, class.column), collapse = "+"))
+    contrast_vector <- c(-1, 1)
+  }
+
   Class  <- conditions
   y      <- edgeR::DGEList(raw.exp)
   y      <- edgeR::calcNormFactors(y)
-  # term   <- ~0+group
   term   <- as.formula(model)
   design <- model.matrix(term)
 
   y      <- edgeR::estimateDisp(y, design)
   fit    <- edgeR::glmFit(y, design)
-  lrt    <- edgeR::glmLRT(fit, coef = 2, contrast = c(-1, 1))
+  lrt    <- edgeR::glmLRT(fit, coef = 2, contrast = contrast_vector)
   tTags  <- edgeR::topTags(lrt, n = NULL)[["table"]]
   result[['edgeR']] <- tTags
   message("Done!")
