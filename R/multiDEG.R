@@ -29,6 +29,10 @@ DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column =
   # library(DESeq2)
   # library(edgeR)
 
+  if(!require(tidyverse)) { stop("tidyverse package not available.") }
+  if(!require(DESeq2)) { stop("DESeq2 package not available.") }
+  if(!require(edgeR)) { stop("edgeR package not available.") }
+
 
   covariablesStop   <- FALSE
   covariablesVector <- NULL
