@@ -20,18 +20,15 @@ DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column =
   # treated               <- "INF"
   # nontreated            <- "CTRL"
   # covariables           <- c("Gender")
-  # covariables           <- NULL
+  # # covariables           <- NULL
   # paired.samples.column <- NULL
   # data(phenodata)
   # data(raw.exp)
-  #
-  # library(tidyverse)
-  # library(DESeq2)
-  # library(edgeR)
 
   if(!require(tidyverse)) { stop("tidyverse package not available.") }
   if(!require(DESeq2)) { stop("DESeq2 package not available.") }
   if(!require(edgeR)) { stop("edgeR package not available.") }
+  if(!require(rstatix)) { stop("rstatix package not available.") }
 
 
   covariablesStop   <- FALSE
@@ -71,9 +68,7 @@ DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column =
 
   conditions <- factor(t(phenodata$Class)) %>% relevel(conditions, ref = nontreated)
 
-  if(!identical(colnames(raw.exp), phenodata$Sample)) {
-    stop("Error: colnames(raw.exp) should be the same of phenodata$Sample")
-  }
+  if(!identical(colnames(raw.exp), phenodata$Sample)) { stop("Error: colnames(raw.exp) should be the same of phenodata$Sample") }
 
 
 
@@ -90,9 +85,11 @@ DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column =
   ## Perform TMM normalization and convert to CPM (Counts Per Million)
   y <- edgeR::calcNormFactors(y, method = "TMM")
   norm.exp <- edgeR::cpm(y) %>% as.data.frame()
+
+
   # Run the Wilcoxon rank-sum test for each gene
   pvalues <- sapply(1:nrow(norm.exp), function(i){
-    data <- cbind.data.frame(gene = as.numeric(t(norm.exp[i,])), conditions)
+    data <- cbind.data.frame(gene = as.numeric(t(norm.exp[i,])), conditions, gender = phenodata$Gender)
     p <- wilcox.test(gene~conditions, data)$p.value
     return(p)
   })
