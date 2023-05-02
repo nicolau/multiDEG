@@ -29,6 +29,7 @@ DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column =
   if(!require(DESeq2)) { stop("DESeq2 package not available.") }
   if(!require(edgeR)) { stop("edgeR package not available.") }
   if(!require(rstatix)) { stop("rstatix package not available.") }
+  if(!require(grid)) { stop("rstatix package not available.") }
 
 
   covariablesStop   <- FALSE
@@ -344,9 +345,9 @@ plot.triple.venn <- function(a1 = c( "a", "b", "c", "d", "e", "t", "g", "h" ),
 plot <- function(listDEGs, type = c("up", "down")) {
   if(!is.null(dev.list())) { dev.off() }
   if(type == "up") {
-    grid.draw(listDEGs$overlap$plot_up$plot)
+    grid::grid.draw(listDEGs$overlap$plot_up$plot)
   } else {
-    grid.draw(listDEGs$overlap$plot_down$plot)
+    grid::grid.draw(listDEGs$overlap$plot_down$plot)
   }
 }
 
