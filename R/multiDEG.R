@@ -90,7 +90,7 @@ DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column =
 
   # Run the Wilcoxon rank-sum test for each gene
   pvalues <- sapply(1:nrow(norm.exp), function(i){
-    data <- cbind.data.frame(gene = as.numeric(t(norm.exp[i,])), conditions, gender = phenodata$Gender)
+    data <- cbind.data.frame(gene = as.numeric(t(norm.exp[i,])), conditions) #, gender = phenodata$Gender)
     p <- wilcox.test(gene~conditions, data)$p.value
     return(p)
   })
