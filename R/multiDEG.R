@@ -13,7 +13,8 @@
 #' @export
 DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column = "Class",
                          adjust.method = c( "holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr", "none"),
-                         covariables = NULL, paired.samples.column = NULL) {
+                         covariables = NULL, paired.samples.column = NULL,
+                         include_wilcoxon = FALSE) {
 
   # class.column          <- "Class"
   # adjust.method         <- "fdr"
@@ -77,34 +78,36 @@ DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column =
 
 
   ############################################################ Wilcoxon rank-sum test ############################################################
-  message("Calculating DE genes using Wilcoxon rank-sum test...")
-  # edgeR TMM normalize
-  y <- edgeR::DGEList(counts = raw.exp, group = conditions)
-  ## Remove rows conssitently have zero or very low counts
-  keep <- edgeR::filterByExpr(y)
-  y <- y[keep, keep.lib.sizes = FALSE]
-  ## Perform TMM normalization and convert to CPM (Counts Per Million)
-  y <- edgeR::calcNormFactors(y, method = "TMM")
-  norm.exp <- edgeR::cpm(y) %>% as.data.frame()
+  if(include_wilcoxon) {
+    message("Calculating DE genes using Wilcoxon rank-sum test...")
+    # edgeR TMM normalize
+    y <- edgeR::DGEList(counts = raw.exp, group = conditions)
+    ## Remove rows conssitently have zero or very low counts
+    keep <- edgeR::filterByExpr(y)
+    y <- y[keep, keep.lib.sizes = FALSE]
+    ## Perform TMM normalization and convert to CPM (Counts Per Million)
+    y <- edgeR::calcNormFactors(y, method = "TMM")
+    norm.exp <- edgeR::cpm(y) %>% as.data.frame()
 
 
-  # Run the Wilcoxon rank-sum test for each gene
-  pvalues <- sapply(1:nrow(norm.exp), function(i){
-    data <- cbind.data.frame(gene = as.numeric(t(norm.exp[i,])), conditions) #, gender = phenodata$Gender)
-    p <- wilcox.test(gene~conditions, data)$p.value
-    return(p)
-  })
-  fdr <- p.adjust(pvalues, method = adjust.method)
-  # Calculate the fold-change for each gene
-  dataCon1 <- norm.exp %>% dplyr::select(c(which(conditions==nontreated)))
-  dataCon2 <- norm.exp %>% dplyr::select(c(which(conditions==treated)))
-  foldChanges <- log2(rowMeans(dataCon2)/rowMeans(dataCon1))
-  # Output results based on the FDR threshold 0.05
-  outRst <- data.frame(row.names = rownames(norm.exp), log2FoldChange = foldChanges, pvalue = pvalues, padj = fdr) %>% na.omit(outRst)
+    # Run the Wilcoxon rank-sum test for each gene
+    pvalues <- sapply(1:nrow(norm.exp), function(i){
+      data <- cbind.data.frame(gene = as.numeric(t(norm.exp[i,])), conditions) #, gender = phenodata$Gender)
+      p <- wilcox.test(gene~conditions, data)$p.value
+      return(p)
+    })
+    fdr <- p.adjust(pvalues, method = adjust.method)
+    # Calculate the fold-change for each gene
+    dataCon1 <- norm.exp %>% dplyr::select(c(which(conditions==nontreated)))
+    dataCon2 <- norm.exp %>% dplyr::select(c(which(conditions==treated)))
+    foldChanges <- log2(rowMeans(dataCon2)/rowMeans(dataCon1))
+    # Output results based on the FDR threshold 0.05
+    outRst <- data.frame(row.names = rownames(norm.exp), log2FoldChange = foldChanges, pvalue = pvalues, padj = fdr) %>% na.omit(outRst)
 
-  result[['Wilcoxon']] <- outRst
-  message("Done!")
-  message("")
+    result[['Wilcoxon']] <- outRst
+    message("Done!")
+    message("")
+  }
   ############################################################ Wilcoxon rank-sum test ############################################################
 
 
