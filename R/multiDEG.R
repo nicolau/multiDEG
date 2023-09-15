@@ -116,27 +116,7 @@ DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column =
 
 
 
-  <<<<<<< HEAD
-  #################################################################### limma-voom ################################################################
-  # message("Calculating DE genes using limma-voom...")
-  # y      <- edgeR::DGEList(raw.exp)
-  # y      <- edgeR::calcNormFactors(y)
-  # term   <- as.formula(model)
-  # design <- model.matrix(term, data = phenodata)
-  # y      <- voom(y, design, plot = T)
-  # fit    <- lmFit(y, design)
-  #
-  # contrasts <- makeContrasts(nontreated - treated, levels = design)
-  #
-  # fit    <- contrasts.fit(fit, contrasts)
-  # fit    <- eBayes(fit)
-  # tTags  <- topTable(fit, coef = 1, adjust.method = adjust.method, sort.by = "P", n = Inf) %>% as.data.frame()
-  # result[['limma']] <- tTags
-  # message("Done!")
-  # message("")
-  #################################################################### limma-voom ################################################################
-  =======
-    #################################################################### limma #####################################################################
+  #################################################################### limma #####################################################################
   message("Calculating DE genes using limma...")
   design <- model.matrix(as.formula(model))
   fit <- lmFit(log2(edgeR::cpm(raw.exp)+1), design)
@@ -156,7 +136,6 @@ DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column =
   message("Done!")
   message("")
   #################################################################### limma #####################################################################
-  >>>>>>> 78cc4a7f1209dbcc2cc9c4bbf770717a5781fdc9
 
 
 
