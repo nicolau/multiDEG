@@ -20,7 +20,7 @@ DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column =
   # treated               <- "INF"
   # nontreated            <- "CTRL"
   # covariables           <- c("Gender")
-  # # covariables           <- NULL
+  # covariables           <- NULL
   # paired.samples.column <- NULL
   # data(phenodata)
   # data(raw.exp)
@@ -30,6 +30,7 @@ DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column =
   if(!require(edgeR)) { stop("edgeR package not available.") }
   if(!require(rstatix)) { stop("rstatix package not available.") }
   if(!require(grid)) { stop("rstatix package not available.") }
+  if(!require(ashr)) { stop("ashr package not available.")}
 
 
   covariablesStop   <- FALSE
@@ -112,13 +113,55 @@ DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column =
 
 
 
+  #################################################################### limma #####################################################################
+  message("Calculating DE genes using limma...")
+  design <- model.matrix(as.formula(model))
+  fit <- lmFit(log2(edgeR::cpm(raw.exp)+1), design)
+  contrast_formula <- paste0("Class", treated, " - Class", nontreated, collapse = "")
+  contrasts <- makeContrasts(contrast_formula, levels = design)
+
+  fit2 <- contrasts.fit(fit = fit, contrasts = contrasts)
+  fit2 <- eBayes(fit2)
+  tTags <- topTable(fit = fit2, coef = contrast_formula, number = Inf, adjust.method = "BH") %>%
+    as.data.frame() %>%
+    dplyr::rename(log2FoldChange = logFC,
+                  baseMean       = AveExpr,
+                  pvalue         = P.Value,
+                  padj           = adj.P.Val)
+
+  result[['limma']] <- tTags
+  message("Done!")
+  message("")
+  #################################################################### limma #####################################################################
+
+
+
+
+
+
   #################################################################### DESeq2 ####################################################################
   message("Calculating DE genes using DESeq2...")
   contrasts <- c("Class", treated, nontreated)
   dds <- DESeq2::DESeqDataSetFromMatrix(countData = raw.exp, colData = phenodata, design = as.formula(model))
 
   dds <- DESeq2::DESeq(dds)
-  res <- DESeq2::results(dds, contrast = contrasts)
+  res <- DESeq2::results(dds, contrast = contrasts, name = paste0(contrasts[2], "_vs_", contrasts[3]))
+  # res_tableOE <- lfcShrink(dds, coef = resultsNames(dds), type = "apeglm")
+
+  # resultsNames(dds) %in% resultsNames(dds)
+  # res_tableOE <- lfcShrink(dds, coef = resultsNames(dds)[1], res = res, type = "apeglm")
+  # res_tableOE <- lfcShrink(dds, contrast = contrasts, res = res, type = "ashr")
+  # res_tableOE <- lfcShrink(dds, contrast = contrasts, res = res, type = "normal")
+
+  # tTags <- res_tableOE %>% as.data.frame()
+  #
+  # ggplot(data = tTags, aes(x = log10(baseMean), y = log2FoldChange)) +
+  #   geom_hline(yintercept = 1) +
+  #   geom_hline(yintercept = -1) +
+  #   geom_point()
+  #
+  # ggplot(data = tTags, aes(x = log10(baseMean), y = log2FoldChange)) +
+  #   geom_point()
 
   tTags <- res %>% as.data.frame()
   result[['DESeq2']] <- tTags
@@ -183,7 +226,7 @@ DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column =
 #'
 #' @return A list of Venn Diagram plots for up- and down-regulated genes
 #' @export
-overlap_DEGs <- function(listDEGs, p_cutoff = 0.05, log2fc_cutoff = 1, padjusted = F) {
+overlap_DEGs_old <- function(listDEGs, p_cutoff = 0.05, log2fc_cutoff = 1, padjusted = F) {
 
   genes_wilcox_up   <- listDEGs$Wilcoxon %>% tibble::rownames_to_column("Symbol")
   genes_wilcox_down <- listDEGs$Wilcoxon %>% tibble::rownames_to_column("Symbol")
@@ -258,6 +301,68 @@ overlap_DEGs <- function(listDEGs, p_cutoff = 0.05, log2fc_cutoff = 1, padjusted
 
   plot_down <- plot.triple.venn(a1 = genes_wilcox_down, a2 = genes_edgeR_down, a3 = genes_DESeq2_down, labels = c("Wilcox", "edgeR", "DESeq2"))
   plot_up   <- plot.triple.venn(a1 = genes_wilcox_up,   a2 = genes_edgeR_up,   a3 = genes_DESeq2_up,   labels = c("Wilcox", "edgeR", "DESeq2"))
+
+  if(!is.null(dev.list())) { dev.off() }
+
+  return(list("plot_up" = plot_up, "plot_down" = plot_down))
+
+}
+
+
+#' Calculates overlapping genes between Wilcox rank-sum test, DESeq2 and edgeR DE methods
+#'
+#' @param listDEGs list of results from DEG_analysis
+#' @param p_cutoff cut-off for p-value
+#' @param log2fc_cutoff cut-off for log2 Fold-change values
+#' @param padjusted Boolean value to use or not adjusted p-values for p_cutoff
+#'
+#' @return A list of Venn Diagram plots for up- and down-regulated genes
+#' @export
+overlap_DEGs <- function(listDEGs, p_cutoff = 0.05, log2fc_cutoff = 1, padjusted = F) {
+
+  degs <- list()
+
+  for(method in names(listDEGs)) {
+    genes_up   <- listDEGs[[method]] %>% tibble::rownames_to_column("Symbol")
+    genes_down <- listDEGs[[method]] %>% tibble::rownames_to_column("Symbol")
+
+    if(padjusted) {
+      genes_up <- genes_up %>%
+        dplyr::filter(log2FoldChange > log2fc_cutoff  & padj < p_cutoff) %>%
+        dplyr::select(Symbol) %>%
+        unlist(use.names = F)
+
+      genes_down <- genes_down %>%
+        dplyr::filter(log2FoldChange < -log2fc_cutoff & padj < p_cutoff) %>%
+        dplyr::select(Symbol) %>%
+        unlist(use.names = F)
+    } else {
+      genes_up <- genes_up %>%
+        dplyr::filter(log2FoldChange > log2fc_cutoff  & pvalue < p_cutoff) %>%
+        dplyr::select(Symbol) %>%
+        unlist(use.names = F)
+
+      genes_down <- genes_down %>%
+        dplyr::filter(log2FoldChange < -log2fc_cutoff & pvalue < p_cutoff) %>%
+        dplyr::select(Symbol) %>%
+        unlist(use.names = F)
+    }
+    degs[[method]][["up"]]   <- genes_up
+    degs[[method]][["down"]] <- genes_down
+
+  }
+
+
+  plot_down <- plot.triple.venn(
+    a1 = degs[["limma"]][["down"]],
+    a2 = degs[["edgeR"]][["down"]],
+    a3 = degs[["DESeq2"]][["down"]],
+    labels = c("limma", "edgeR", "DESeq2"))
+  plot_up   <- plot.triple.venn(
+    a1 = degs[["limma"]][["up"]],
+    a2 = degs[["edgeR"]][["up"]],
+    a3 = degs[["DESeq2"]][["up"]],
+    labels = c("limma", "edgeR", "DESeq2"))
 
   if(!is.null(dev.list())) { dev.off() }
 
