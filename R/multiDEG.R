@@ -163,6 +163,32 @@ DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column =
 
 
 
+  #################################################################### limma #####################################################################
+  message("Calculating DE genes using limma...")
+  design <- model.matrix(as.formula(model))
+  fit <- lmFit(log2(edgeR::cpm(raw.exp)+1), design)
+  contrast_formula <- paste0("Class", treated, " - Class", nontreated, collapse = "")
+  contrasts <- makeContrasts(contrast_formula, levels = design)
+
+  fit2 <- contrasts.fit(fit = fit, contrasts = contrasts)
+  fit2 <- eBayes(fit2)
+  tTags <- topTable(fit = fit2, coef = contrast_formula, number = Inf, adjust.method = "BH") %>%
+    as.data.frame() %>%
+    dplyr::rename(log2FoldChange = logFC,
+                  baseMean       = AveExpr,
+                  pvalue         = P.Value,
+                  padj           = adj.P.Val)
+
+  result[['limma']] <- tTags
+  message("Done!")
+  message("")
+  #################################################################### limma #####################################################################
+
+
+
+
+
+
   #################################################################### DESeq2 ####################################################################
   message("Calculating DE genes using DESeq2...")
   contrasts <- c("Class", treated, nontreated)
