@@ -116,7 +116,7 @@ DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column =
 
 
 
-<<<<<<< HEAD
+  <<<<<<< HEAD
   #################################################################### limma-voom ################################################################
   # message("Calculating DE genes using limma-voom...")
   # y      <- edgeR::DGEList(raw.exp)
@@ -135,8 +135,8 @@ DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column =
   # message("Done!")
   # message("")
   #################################################################### limma-voom ################################################################
-=======
-  #################################################################### limma #####################################################################
+  =======
+    #################################################################### limma #####################################################################
   message("Calculating DE genes using limma...")
   design <- model.matrix(as.formula(model))
   fit <- lmFit(log2(edgeR::cpm(raw.exp)+1), design)
@@ -156,34 +156,7 @@ DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column =
   message("Done!")
   message("")
   #################################################################### limma #####################################################################
->>>>>>> 78cc4a7f1209dbcc2cc9c4bbf770717a5781fdc9
-
-
-
-
-
-
-  #################################################################### limma #####################################################################
-  message("Calculating DE genes using limma...")
-  design <- model.matrix(as.formula(model))
-  fit <- lmFit(log2(edgeR::cpm(raw.exp)+1), design)
-  contrast_formula <- paste0("Class", treated, " - Class", nontreated, collapse = "")
-  contrasts <- makeContrasts(contrast_formula, levels = design)
-
-  fit2 <- contrasts.fit(fit = fit, contrasts = contrasts)
-  fit2 <- eBayes(fit2)
-  # Save and rename limma result table
-  tTags <- topTable(fit = fit2, coef = contrast_formula, number = Inf, adjust.method = "BH") %>%
-    as.data.frame() %>%
-    dplyr::rename(log2FoldChange = logFC,
-                  baseMean       = AveExpr,
-                  pvalue         = P.Value,
-                  padj           = adj.P.Val)
-
-  result[['limma']] <- tTags
-  message("Done!")
-  message("")
-  #################################################################### limma #####################################################################
+  >>>>>>> 78cc4a7f1209dbcc2cc9c4bbf770717a5781fdc9
 
 
 
