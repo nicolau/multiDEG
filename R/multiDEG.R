@@ -122,6 +122,7 @@ DEG_analysis <- function(raw.exp, phenodata, treated, nontreated, class.column =
 
   fit2 <- contrasts.fit(fit = fit, contrasts = contrasts)
   fit2 <- eBayes(fit2)
+  # Save and rename limma result table
   tTags <- topTable(fit = fit2, coef = contrast_formula, number = Inf, adjust.method = "BH") %>%
     as.data.frame() %>%
     dplyr::rename(log2FoldChange = logFC,
